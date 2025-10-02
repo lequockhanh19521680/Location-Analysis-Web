@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String?   // Null for OAuth users
+  name          String?
+  provider      String?   // "local", "google", "facebook"
+  providerId    String?   // OAuth provider ID
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  analysisResults AnalysisResult[]
+  
+  @@map("users")
+}
+
+model AnalysisResult {
+  id                String    @id @default(uuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Input Parameters
+  address           String
+  latitude          Float
+  longitude         Float
+  industry          String    // F&B, Retail, Service
+  industrySubType   String?
+  radius            Int       // in meters (300, 500, 1000)
+  
+  // Weight Configuration (Dynamic weights)
+  weightA           Float     @default(0.30)  // Competition & Saturation
+  weightB           Float     @default(0.25)  // Traffic & Accessibility
+  weightC           Float     @default(0.30)  // Socio-Economic
+  weightD           Float     @default(0.10)  // Infrastructure & Environment
+  weightE           Float     @default(0.05)  // Macro & Legal
+
+  // Pillar A: Competition & Saturation (4 sub-scores)
+  pillarA_score     Float
+  subScoreA1        Float     // Competitor Density
+  subScoreA2        Float     // Competitor Quality
+  subScoreA3        Float     // Market Saturation Index
+  subScoreA4        Float     // Competitive Advantage
+
+  // Pillar B: Traffic & Accessibility (4 sub-scores)
+  pillarB_score     Float
+  subScoreB1        Float     // Foot Traffic Estimation
+  subScoreB2        Float     // Public Transport Access
+  subScoreB3        Float     // Vehicle Accessibility
+  subScoreB4        Float     // Visibility Score
+
+  // Pillar C: Socio-Economic (3 sub-scores)
+  pillarC_score     Float
+  subScoreC1        Float     // Target Customer Match
+  subScoreC2        Float     // Population Density
+  subScoreC3        Float     // Income Level
+
+  // Pillar D: Infrastructure & Environment (3 sub-scores)
+  pillarD_score     Float
+  subScoreD1        Float     // Parking Availability
+  subScoreD2        Float     // Safety Score
+  subScoreD3        Float     // Aesthetic Score
+
+  // Pillar E: Macro & Legal (3 sub-scores)
+  pillarE_score     Float
+  subScoreE1        Float     // Urban Planning Risk (CRITICAL)
+  subScoreE2        Float     // Future Development
+  subScoreE3        Float     // Economic Outlook
+
+  // Final Scores
+  totalScore        Float     // Final weighted sum
+  hasRiskAlert      Boolean   @default(false)  // NFR7 Logic - Critical threshold
+  
+  // Raw Data (JSON) for transparency
+  rawData           Json?     // Store API responses and intermediate calculations
+  
+  // Premium Features
+  isPremium         Boolean   @default(false)
+  paymentStatus     String?   // "pending", "completed", "failed"
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@map("analysis_results")
+  @@index([userId])
+  @@index([createdAt])
+}
