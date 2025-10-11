@@ -1,0 +1,10 @@
+rootProject.name = 'synergyflow-backend'
+
+include 'api-gateway'
+include 'service-discovery'
+include 'auth-service'
+include 'workspace-service'
+include 'task-service'
+include 'notification-service'
+include 'reporting-service'
+include 'common-lib'
